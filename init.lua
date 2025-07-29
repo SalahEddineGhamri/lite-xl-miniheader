@@ -3,6 +3,10 @@ local core = require "core"
 local View = require "core.view"
 local style = require "core.style"
 
+-- TODO: find a way to make sections optional in config
+-- TODO: add git section
+-- TODO: correct short path format 
+
 -- Override the TitleView class entirely
 local TitleView = require "core.titleview"
 
@@ -53,32 +57,37 @@ function TitleView:draw()
   -- Get current time
   local time_str = os.date("%H:%M:%S")
   
-  -- Cleanly truncate middle of long paths, preserving head/tail
+  -- show path in short format
+  -- TODO: adapt for windows
   local function shorten_path(path, max_len)
-  if not path or #path <= max_len then return path end
+    if not path or #path <= max_len then return path end -- shorten only long paths
 
-  -- Normalize path separators
-  path = path:gsub("\\", "/")
+    -- Normalize path separators
+    path = path:gsub("\\", "/")
 
-  local parts = {}
-  for part in path:gmatch("[^/]+") do
-      table.insert(parts, part)
-  end
+    -- Normalize Home
+    local home = os.getenv("HOME")
+    if home and path:sub(1, #home) == home then
+     path = "~" .. path:sub(#home + 1)
+    end
 
-  if #parts <= 2 then
-      return "..." .. path:sub(-max_len + 3)
-  end
+    local parts = {}
+    local prev_part
+    for part in path:gmatch("[^/]+") do
+      if prev_part then
+         local first = prev_part:sub(1, 1)
+         if first == "." then
+           table.insert(parts, prev_part:sub(1, 2))
+         else
+           table.insert(parts, first)
+         end
+       end
+       prev_part = part
+    end
 
-  local first = parts[1]
-  local last = parts[#parts]
-  local shortened = string.format("%s/.../%s", first, last)
-
-  if #shortened <= max_len then
-      return shortened
-  else
-      -- fallback to tail-only truncation
-      return "..." .. path:sub(-max_len + 3)
-  end
+    table.insert(parts, prev_part)
+    local shortened = table.concat(parts, "/")
+    return shortened
   end
   
   local buffer_path = "[No File]"
@@ -88,7 +97,7 @@ function TitleView:draw()
   
   -- Add modified indicator
   if is_modified then
-    buffer_path = " ● "
+    buffer_path = " ● " .. buffer_path 
   end
   
   -- Get current line and column
