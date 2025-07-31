@@ -25,7 +25,7 @@ local original_draw = TitleView.draw
 -- Override the constructor
 function TitleView:new()
   original_new(self)
-  self.size.y = 35  -- Set our desired height
+   self.size.y = 35  -- Set our desired height
 end
 
 -- Override the update method
@@ -124,6 +124,12 @@ function TitleView:draw()
     local percent = math.floor((line / total_lines) * 100)
     position = string.format("%d%%", percent)
   end
+
+  -- Get file encoding
+  local file_encoding = ""
+  if core.active_view and core.active_view.doc then
+  file_encoding = core.active_view.doc.encoding or "utf-8"
+  end
   
   -- Get file type/syntax
   local syntax_name = ""
@@ -152,7 +158,7 @@ function TitleView:draw()
   
   -- Build left section
   local left_parts = {}
-  table.insert(left_parts, time_str)
+  table.insert(left_parts, time_str) -- TODO: make this optional
   table.insert(left_parts, buffer_path)
   local left_section = table.concat(left_parts, " ")
   
@@ -164,6 +170,7 @@ function TitleView:draw()
 
   if git_branch ~= "" then table.insert(right_parts, git_branch) end
   if syntax_name ~= "" then table.insert(right_parts, syntax_name) end
+  if file_encoding ~= "" then table.insert(right_parts, file_encoding) end
   if location ~= "" then table.insert(right_parts, location) end
   if position ~= "" then table.insert(right_parts, position) end
   local right_section = table.concat(right_parts, " ")
