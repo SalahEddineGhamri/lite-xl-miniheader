@@ -2,13 +2,20 @@
 local core = require "core"
 local View = require "core.view"
 local style = require "core.style"
+local git = require "plugins.lite-xl-miniheader.git_utils"
 
+-- TODO: define faces for the minibuffer
 -- TODO: find a way to make sections optional in config
--- TODO: add git section
--- TODO: correct short path format 
+
+-- reducing the git process frequency
+local last_git_time = 0
+local git_interval = 1.0
 
 -- Override the TitleView class entirely
 local TitleView = require "core.titleview"
+
+-- TODO: use directory instead of file
+local git_status = {}  
 
 -- Save original methods
 local original_new = TitleView.new
@@ -28,7 +35,7 @@ function TitleView:update()
 end
 
 -- Override the draw method with our MiniHeader functionality
-function TitleView:draw()
+function TitleView:draw() 
   original_draw(self)
   local x, y, w, h = self:get_content_bounds()
   
@@ -44,10 +51,10 @@ function TitleView:draw()
   -- Choose colors based on modified state
   local bg_color, fg_color
   if is_modified then
-    bg_color = style.line_highlight or style.background2
+    bg_color = style.background
     fg_color = style.accent or style.text
   else
-    bg_color = style.background2
+    bg_color = style.background
     fg_color = style.text
   end
   
@@ -97,7 +104,9 @@ function TitleView:draw()
   
   -- Add modified indicator
   if is_modified then
-    buffer_path = " ● " .. buffer_path 
+    buffer_path = " ● " .. buffer_path
+  else
+    buffer_path = "    " .. buffer_path
   end
   
   -- Get current line and column
@@ -121,6 +130,25 @@ function TitleView:draw()
   if core.active_view and core.active_view.doc and core.active_view.doc.syntax then
     syntax_name = core.active_view.doc.syntax.name or ""
   end
+
+  local function my_branch_handler(branch_name, filename)
+  if branch_name ~= "" then
+      git_status[filename] = string.format(" %s", branch_name)
+  else
+      git_status[filename] = ""
+  end
+  end
+
+  -- Update logic
+  if core.active_view and core.active_view.doc and core.active_view.doc.abs_filename then
+  local file = core.active_view.doc.abs_filename
+  -- TODO: called at draw speed :/
+  local now = system.get_time()
+  if (now - last_git_time < git_interval) then
+     git.get_branch(file, function(branch) my_branch_handler(branch, file) end)
+  end
+  last_git_time = now
+  end
   
   -- Build left section
   local left_parts = {}
@@ -130,6 +158,11 @@ function TitleView:draw()
   
   -- Build right section
   local right_parts = {}
+
+  local file = core.active_view and core.active_view.doc and core.active_view.doc.abs_filename
+  local git_branch = git_status[file]
+
+  if git_branch ~= "" then table.insert(right_parts, git_branch) end
   if syntax_name ~= "" then table.insert(right_parts, syntax_name) end
   if location ~= "" then table.insert(right_parts, location) end
   if position ~= "" then table.insert(right_parts, position) end
