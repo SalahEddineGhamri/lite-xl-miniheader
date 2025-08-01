@@ -4,6 +4,7 @@ local View = require "core.view"
 local style = require "core.style"
 local git = require "plugins.lite-xl-miniheader.git_utils"
 
+-- TODO: revise how git process is opened
 -- TODO: define faces for the minibuffer
 -- TODO: find a way to make sections optional in config
 
