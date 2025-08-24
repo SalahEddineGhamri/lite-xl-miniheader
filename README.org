@@ -7,6 +7,8 @@ miniheader is a lightweight, configurable Lite XL plugin that enhances the edito
 with contextual information such as Git branch, diff stats, file path, position, and more. 
 It is designed to be asynchronous and non-blocking, making it efficient even in large projects.
 
+[[file:miniheader.png]]
+
 ** Features
 - Displays file path, shortened intelligently with home directory substitution.
 - Shows modification status (● indicator) when a buffer is dirty.
