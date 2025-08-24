@@ -9,18 +9,20 @@ local config = require "core.config"
 ------------------------------------------------------------------------------
 -- TODO: define faces for the minibuffer. each section can use different color
 -- TODO: make sections optional
+
+-- DONE: remove sporadic movement due formating. reserve space
 -- DONE: add config
 -- DONE: revise how git process is opened
 ------------------------------------------------------------------------------
 
 config.plugins.header = {
-  last_git_time = 0,
   git_interval = 1.0,
-  height = 35
+  height = 35,
+  show_time = false
+  -- TODO: add show options for all sections
 }
 
 local last_git_time = 0
-local git_interval = 1.0
 local git_status = {}
 
 local TitleView = require "core.titleview"
@@ -83,6 +85,15 @@ local function register_git_stat(plus, minus, filename)
   git_status[filename].minus = minus or 0
 end
 
+local function padded_num(n, width)
+  if n == 0 then
+    return string.rep(" ", width)
+  else
+    local s = tostring(n)
+    return string.rep(" ", width - #s) .. s
+  end
+end
+
 function TitleView:draw()
   original_draw(self)
   local x, y, w, h = self:get_content_bounds()
@@ -108,7 +119,7 @@ function TitleView:draw()
 
   renderer.draw_rect(x, y, w, h, bg_color)
 
-  local time_str = os.date("%H:%M:%S")
+  local time_str = (config.plugins.header.show_time and os.date("%H:%M:%S")) or ""
 
   local buffer_path = "[No File]"
   if core.active_view and core.active_view.doc and core.active_view.doc.abs_filename then
@@ -116,7 +127,7 @@ function TitleView:draw()
   end
 
   if is_modified then
-    buffer_path = " ● " .. buffer_path
+    buffer_path = "  ● " .. buffer_path
   else
     buffer_path = "    " .. buffer_path
   end
@@ -124,7 +135,7 @@ function TitleView:draw()
   local location = ""
   if core.active_view and core.active_view.doc then
     local line, col = core.active_view.doc:get_selection()
-    location = string.format("L%d C%d", line, col)
+    location = string.format("L%s C%s", padded_num(line, 3), padded_num(col, 2))
   end
 
   local position = ""
@@ -132,7 +143,7 @@ function TitleView:draw()
     local line, _ = core.active_view.doc:get_selection()
     local total_lines = #core.active_view.doc.lines
     local percent = math.floor((line / total_lines) * 100)
-    position = string.format("%d%%", percent)
+    position = string.format("%s%%", padded_num(percent, 3))
   end
 
   local file_encoding = ""
@@ -150,7 +161,7 @@ function TitleView:draw()
     local file = core.active_view.doc.abs_filename
 
     local now = system.get_time()
-    if (now - last_git_time < git_interval) then
+    if (now - last_git_time < config.plugins.header.git_interval) then
         git.get_branch(file, function(branch) register_git_branch(branch, file) end)
         git.get_diff_stats(file, function(plus, minus)  register_git_stat(plus, minus, file) end)
     end
@@ -160,7 +171,7 @@ function TitleView:draw()
 
 
   local left_parts = {}
-  table.insert(left_parts, time_str) 
+  if time_str ~= "" then table.insert(left_parts, time_str) end 
   table.insert(left_parts, buffer_path)
   local left_section = table.concat(left_parts, " ")
 
