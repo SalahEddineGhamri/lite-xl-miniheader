@@ -142,7 +142,7 @@ function TitleView:draw()
   if core.active_view and core.active_view.doc then
     local line, _ = core.active_view.doc:get_selection()
     local total_lines = #core.active_view.doc.lines
-    local percent = math.floor((line / total_lines) * 100)
+    local percent = math.floor(((line - 1) / total_lines) * 100) + 1
     position = string.format("%s%%", padded_num(percent, 3))
   end
 

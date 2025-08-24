@@ -1,0 +1,108 @@
+
+* miniheader - Enhanced Title Bar for Lite XL and Pragtical
+Author: S. Ghamri
+License: MIT
+
+miniheader is a lightweight, configurable Lite XL plugin that enhances the editor's title bar
+with contextual information such as Git branch, diff stats, file path, position, and more. 
+It is designed to be asynchronous and non-blocking, making it efficient even in large projects.
+
+** Features
+- Displays file path, shortened intelligently with home directory substitution.
+- Shows modification status (● indicator) when a buffer is dirty.
+- Git integration:
+  - Current branch name (e.g.,  master)
+  - Git diff stats for the current file (+added/-deleted)
+  - Asynchronous Git calls with single-threaded queue for performance
+- File information:
+  - Line and column, padded and optional zero-hiding
+  - Percentage through file
+  - Syntax name
+  - Encoding
+- Configurable refresh interval for Git updates
+- Customizable height
+- Optional display of current time
+- Works seamlessly with Lite XL’s existing title bar
+
+** Configuration
+All settings are exposed via `core.config.plugins.header`:
+#+BEGIN_SRC lua
+config.plugins.header = {
+  git_interval = 1.0,    ; seconds between Git updates
+  height = 35,           ; title bar height in pixels
+  show_time = false      ; whether to show HH:MM:SS time
+}
+#+END_SRC
+Additional future configuration options may include enabling/disabling individual sections.
+
+** Usage
+1. Place the `miniheader.lua` file inside `plugins/` in your Lite XL configuration directory.
+2. Require the module in your `init.lua` or load automatically as a plugin.
+3. Configure using `config.plugins.header` if desired.
+Example:
+#+BEGIN_SRC lua
+-- load plugin
+require "plugins.miniheader"
+config.plugins.header.show_time = true
+config.plugins.header.height = 30
+#+END_SRC
+
+** Git Integration Details
+- `miniheader` uses a non-blocking, coroutine-based system to query Git asynchronously.
+- Only a **single Git thread** is active at a time to avoid hitting OS pipe limits.
+- Supports:
+  - Branch detection via `git rev-parse --abbrev-ref HEAD`
+  - Diff stats for the current file via `git diff --numstat <file>`
+- Data is stored per file in `git_status[filename]`:
+#+BEGIN_SRC lua
+git_status[filename] = {
+  branch = " master",
+  plus   = 3,
+  minus  = 1
+}
+#+END_SRC
+- Thread-safe queuing ensures multiple Git queries are serialized, preventing resource exhaustion.
+
+** API Functions
+- `git.get_branch(filepath, callback)`  
+  Retrieves the current Git branch for a file asynchronously. Callback receives the branch name string.
+- `git.get_diff_stats(filepath, callback)`  
+  Retrieves the added/deleted line count for a file asynchronously. Callback receives `(added, deleted)`.
+
+** Internal Helpers
+- `shorten_path(path, max_len)`  
+  Shortens a file path intelligently, replacing `$HOME` with `~` and collapsing intermediate directories.
+- `padded_num(n, width)`  
+  Returns a string of width `width`, hiding zero values but reserving space.
+- `register_git_branch(branch_name, filename)`  
+  Updates `git_status[filename].branch`.
+- `register_git_stat(plus, minus, filename)`  
+  Updates `git_status[filename].plus` and `.minus`.
+
+** Rendering Details
+- Integrates into `core.titleview`:
+  - Overrides `new`, `update`, and `draw` methods
+  - Reserves a fixed height (`config.plugins.header.height`)
+  - Draws left-aligned file path and right-aligned status indicators
+- Conditional coloring for modified files using `style.accent` or `style.text`
+- Non-blocking rendering; coroutines used for Git queries
+
+** Example Header Layout
+#+ATTR_HTML: :align center
+| Time  | File Path          | Git Branch | +Added/-Deleted | Syntax | Encoding | L### C## | Pct |
+|-------+------------------+------------+----------------+--------+---------+----------+-----|
+| 12:34 | ~/proj/main.c      |  master  | +3/-1          | C      | utf-8   | L007 C042|  25%|
+
+** Notes / TODO
+- Define separate color faces for each section.
+- Make sections optional via configuration.
+- Improve Git submodule detection.
+- Allow user to customize Git symbols and diff indicators.
+- Ensure sporadic movement due to formatting is eliminated.
+
+** Credits
+Developed by S. Ghamri. Inspired by modern editor status bars and minimal Git integration in Lite XL and Pragtical.
+
+** License
+MIT
+
