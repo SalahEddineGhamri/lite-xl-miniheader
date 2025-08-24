@@ -1,0 +1,16 @@
+{
+  "addons": [
+    {
+      "id": "miniheader",
+      "name": "mini header",
+      "description": "lightweight, configurable plugin that enhances the editor’s title bar with contextual information such as Git branch",
+      "version": "0.1.0",
+      "mod_version": "3.0.0",
+      "dependencies": {
+      },
+      "tags": [
+        "miniheader"
+      ]
+    }
+  ]
+}

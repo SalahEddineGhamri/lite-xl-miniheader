@@ -161,14 +161,12 @@ function TitleView:draw()
     local file = core.active_view.doc.abs_filename
 
     local now = system.get_time()
-    if (now - last_git_time < config.plugins.header.git_interval) then
+    if (now - last_git_time >= config.plugins.header.git_interval) then
         git.get_branch(file, function(branch) register_git_branch(branch, file) end)
         git.get_diff_stats(file, function(plus, minus)  register_git_stat(plus, minus, file) end)
+        last_git_time = now
     end
-
-    last_git_time = now
   end
-
 
   local left_parts = {}
   if time_str ~= "" then table.insert(left_parts, time_str) end 
@@ -181,8 +179,8 @@ function TitleView:draw()
   local info = git_status[file] or {}
   local added = info.plus or 0
   local deleted = info.minus or 0
-  local git_branch = info.branch
-  local git_stat = (added ~= 0 and deleted ~=0 and string.format("+%d/-%d", added, deleted)) or "" 
+  local git_branch = info.branch or ""
+  local git_stat = (added ~= 0 or deleted ~= 0) and string.format("+%d/-%d", added, deleted) or ""
 
   if git_branch ~= "" then table.insert(right_parts, git_branch) end
   if git_stat ~= "" then table.insert(right_parts, git_stat) end
